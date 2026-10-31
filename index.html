@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registration Form</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f4f8; margin: 0; padding: 30px 16px; color: #222; }
+    .box { background: #fff; max-width: 420px; margin: 0 auto 24px; padding: 22px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    h1 { font-size: 22px; margin-top: 0; }
+    h2 { font-size: 18px; margin-top: 0; }
+    label { display: block; margin-top: 12px; font-size: 14px; }
+    input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; font-size: 15px; }
+    button { margin-top: 16px; width: 100%; padding: 10px; font-size: 15px; cursor: pointer; }
+    #message { margin-top: 12px; font-size: 14px; }
+    ul { padding-left: 18px; margin: 0; }
+    li { margin-bottom: 8px; font-size: 14px; }
+    .small { color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h1>Registration Form</h1>
+    <form id="regForm">
+      <label>Name <input type="text" id="name" required></label>
+      <label>Email <input type="email" id="email" required></label>
+      <label>Roll number (optional) <input type="text" id="rollNo"></label>
+      <button type="submit">Register</button>
+      <div id="message"></div>
+    </form>
+  </div>
+
+  <div class="box">
+    <h2>Registered so far</h2>
+    <ul id="list"><li class="small">Loading...</li></ul>
+  </div>
+
+  <script>
+    // Paste your API Gateway URL here (no slash at the end), for example:
+    // https://abc123.execute-api.ap-south-1.amazonaws.com
+    const API_URL = "YOUR_API_URL";
+
+    const form = document.getElementById("regForm");
+    const message = document.getElementById("message");
+    const list = document.getElementById("list");
+
+    // Show everyone who has registered
+    async function loadList() {
+      try {
+        const res = await fetch(API_URL + "/registrations");
+        const people = await res.json();
+        list.innerHTML = "";
+        if (people.length === 0) {
+          list.innerHTML = '<li class="small">No one yet. Be the first!</li>';
+          return;
+        }
+        people.forEach(function (p) {
+          const li = document.createElement("li");
+          li.textContent = p.name + " (" + p.email + ")";  // textContent keeps it safe from injected HTML
+          list.appendChild(li);
+        });
+      } catch (err) {
+        list.innerHTML = '<li class="small">Could not load the list. Check the API URL and CORS.</li>';
+      }
+    }
+
+    // Send the form to the API
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      message.textContent = "Saving...";
+      try {
+        const res = await fetch(API_URL + "/registrations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            rollNo: document.getElementById("rollNo").value
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          message.textContent = "Thanks for registering!";
+          form.reset();
+          loadList();
+        } else {
+          message.textContent = data.error || "Something went wrong.";
+        }
+      } catch (err) {
+        message.textContent = "Could not reach the server. Check the API URL and CORS.";
+      }
+    });
+
+    loadList();
+  </script>
+</body>
+</html>
